@@ -6,38 +6,79 @@ using UnityEngine;
 public class Rocket : MonoBehaviour
 {
     Rigidbody rigidBody;
+    AudioSource audioSource;
+    [SerializeField] float rcsThrust = 100f;
+    [SerializeField] float thrust = 10f;
       // Start is called before the first frame update
     void Start()
     {
         rigidBody = GetComponent<Rigidbody>();
+        audioSource = GetComponent<AudioSource>();
 
     }
 
     // Update is called once per frame
     void Update()
     {
-        ProcessInput();
+        Thrust();
+        Rotate();
+     
     }
 
-    private void ProcessInput()
+    void OnCollisionEnter(Collision collision)
     {
         
-        if (Input.GetKey(KeyCode.Space)) //can thrust while rotating
+        switch (collision.gameObject.tag)
         {
-            print("Thrust Enabled");
-            rigidBody.AddRelativeForce(Vector3.up);
-            
-        } 
+            case "Friendly":
+                print("OK");
+                break;
+            case "Fuel":
+                print("Fuel Loaded");
+                break;
+            default:
+                print ("Dead");
+                break;
+        }
+    }
+
+    private void Rotate()
+    {
+        rigidBody.freezeRotation = true; //take manual control of rotation
+
+        
+        float rotationThisFrame = rcsThrust * Time.deltaTime;
+
         if (Input.GetKey(KeyCode.A))
         {
-            print("Rotate Left");
-            rigidBody.transform.Rotate(Vector3.forward);
+            
+            transform.Rotate(Vector3.forward * rotationThisFrame);
         }
         else if (Input.GetKey(KeyCode.D))
         {
-            print("Rotate Right");
-            rigidBody.transform.Rotate(-Vector3.forward);
+                   
+            transform.Rotate(-Vector3.forward * rotationThisFrame);
         }
-        
+        rigidBody.freezeRotation = false; //resume rotation.
+    }
+    private void Thrust()
+    {
+        float thrustThisFrame = thrust - Time.deltaTime;
+
+        if (Input.GetKey(KeyCode.Space)) //can thrust while rotating
+        {
+            print("Thrust Enabled");
+            rigidBody.AddRelativeForce(Vector3.up * thrustThisFrame);
+
+            if (!audioSource.isPlaying)
+            {
+                audioSource.Play();
+            }
+
+        }
+        else
+        {
+            audioSource.Stop();
+        }
     }
 }
