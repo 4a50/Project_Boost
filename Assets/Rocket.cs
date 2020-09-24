@@ -2,14 +2,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.SceneManagement;
 public class Rocket : MonoBehaviour
 {
     Rigidbody rigidBody;
     AudioSource audioSource;
+
     [SerializeField] float rcsThrust = 100f;
     [SerializeField] float thrust = 10f;
-      // Start is called before the first frame update
+    
+    enum States { Alive, Dying, Trancending};
+    States state = States.Alive;
+
+    // Start is called before the first frame update
     void Start()
     {
         rigidBody = GetComponent<Rigidbody>();
@@ -20,26 +25,45 @@ public class Rocket : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Thrust();
-        Rotate();
-     
+        if (state == States.Alive)
+        {
+            Thrust();
+            Rotate();
+        }
     }
 
     void OnCollisionEnter(Collision collision)
     {
         
+        if (state != States.Alive) { return; }
+
         switch (collision.gameObject.tag)
         {
             case "Friendly":
                 print("OK");
                 break;
-            case "Fuel":
-                print("Fuel Loaded");
+            case "Finish":
+                print("Landed. Level Complete");
+                state = States.Trancending;
+                Invoke("LoadNextLevel", 1f); //TODO Paramaterize the time
                 break;
             default:
-                print ("Dead");
+                print("Dead");
+                state = States.Dying;
+                audioSource.Stop();
+                Invoke("LoadFirstLevel", 1.5f);
                 break;
         }
+    }
+
+    private void LoadFirstLevel()
+    {
+        SceneManager.LoadScene(0);
+    }
+
+    private void LoadNextLevel()
+    {
+        SceneManager.LoadScene(1);
     }
 
     private void Rotate()
@@ -70,7 +94,7 @@ public class Rocket : MonoBehaviour
             print("Thrust Enabled");
             rigidBody.AddRelativeForce(Vector3.up * thrustThisFrame);
 
-            if (!audioSource.isPlaying)
+            if (!audioSource.isPlaying && state == States.Alive)
             {
                 audioSource.Play();
             }
